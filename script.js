@@ -1,6 +1,72 @@
 const map = new maplibregl.Map({
   container: 'map',
-  style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+  style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
   center: [0, 20],
   zoom: 2
 });
+
+map.on('load', () => {
+  // --- Countries layer ---
+  map.addSource('countries', {
+    type: 'geojson',
+    data: 'data/countries.geojson'
+  });
+  map.addLayer({
+    id: 'countries-outline',
+    type: 'line',
+    source: 'countries',
+    paint: {
+      'line-color': '#ff6b35',
+      'line-width': 2
+    }
+  });
+
+  // --- Provinces layer ---
+  map.addSource('provinces', {
+    type: 'geojson',
+    data: 'data/provinces.geojson'
+  });
+  map.addLayer({
+    id: 'provinces-fill',
+    type: 'fill',
+    source: 'provinces',
+    paint: {
+      'fill-color': '#3388ff',
+      'fill-opacity': 0.2
+    }
+  });
+  map.addLayer({
+    id: 'provinces-outline',
+    type: 'line',
+    source: 'provinces',
+    paint: {
+      'line-color': '#3388ff',
+      'line-width': 1.5
+    }
+  });
+
+  // --- Cities layer ---
+  map.addSource('cities', {
+    type: 'geojson',
+    data: 'data/cities.geojson'
+  });
+  map.addLayer({
+    id: 'cities-fill',
+    type: 'fill',
+    source: 'cities',
+    paint: {
+      'fill-color': '#2ecc71',
+      'fill-opacity': 0.3
+    }
+  });
+  map.addLayer({
+    id: 'cities-outline',
+    type: 'line',
+    source: 'cities',
+    paint: {
+      'line-color': '#2ecc71',
+      'line-width': 1.5
+    }
+  });
+});
+
