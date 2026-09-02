@@ -8,10 +8,27 @@ const map = new maplibregl.Map({
 /************************ Stats *************************/
 fetch('data/stats.json')
   .then(response => response.json())
-  .then(stats => {
-    document.getElementById('stats').innerHTML = `
-      <p>🌍 ${stats.countries} countries &nbsp; 🏙️ ${stats.cities} cities &nbsp; 🏞️ ${stats.provinces} provinces</p>
-    `;
+  .then(data => {
+    const container = document.getElementById('stats');
+
+    const rows = data.map(row => `
+      <div style="margin-bottom: 20px;">
+        <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px;">
+          <span class="fi fi-${row.iso_code}" style="font-size: 18px;"></span>
+          <span style="font-size: 14px; font-weight: 500; flex: 1;">${row.country}</span>
+          <span style="font-size: 13px; color: #888;">
+            ${row.travelled_area_percentage.toFixed(2)}%
+            (${Math.round(row.travelled_area).toLocaleString()} / ${Math.round(row.country_area).toLocaleString()} km²)
+          </span>
+        </div>
+        <div style="height: 8px; background: #eee; border-radius: 4px; overflow: hidden;">
+          <div style="height: 100%; width: ${row.travelled_area_percentage}%; background: #2a78d6; border-radius: 4px;"></div>
+        </div>
+        <div style="font-size: 13px; color: #888; margin-top: 6px;">${row.city_province}</div>
+      </div>
+    `).join('');
+
+    container.innerHTML = rows;
   })
   .catch(err => console.error('Failed to load stats:', err));
 

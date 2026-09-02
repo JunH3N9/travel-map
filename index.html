@@ -5,20 +5,22 @@
   <title>My Travel Map</title>
   <link href="https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.css" rel="stylesheet" />
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icons/7.2.3/css/flag-icons.min.css">
 </head>
 
 <body>
   <div id="page">
-    <div id="map">
-      <div id="controls">
-        <button id="btn-countries" class="active">Countries</button>
-        <button id="btn-detail">Provinces + Cities</button>        
+    <div id="content-wrapper">
+      <div id="map">
+        <div id="controls">
+          <button id="btn-countries" class="active">Countries</button>
+          <button id="btn-detail">Provinces + Cities</button>        
+        </div>
+        <button id="btn-fullscreen">⛶</button>
       </div>
-      <button id="btn-fullscreen">⛶</button>
-    </div>
-  </div>
-
-  <div id="stats"></div>
+      <div id="stats"></div>
+    </div>    
+  </div>  
 
   <script src="https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js"></script>
   <script src="script.js"></script>

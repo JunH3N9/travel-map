@@ -10,6 +10,7 @@ body {
   flex-direction: column;
 }
 
+/**************** Buttons and controls ****************/
 #controls {
   position: absolute;
   top: 10px;
@@ -50,16 +51,25 @@ body {
   font-size: 14px;
 }
 
+/**************** Map and Stats ****************/
+#content-wrapper {
+  width: 80%;
+  margin: 0 auto;
+}
+
 #map {
   position: relative;   
   height: 90vh;          
-  width: 90%;
+  width: 100%;
   margin: 0 auto; /*Center the map horizontally */
   margin-top: 20px;
 }
 
 #stats {
-  padding: 20px;
-  text-align: center;
-  font-size: 18px;
+  width: 60%;
+  margin: 20px 0;
+  padding: 24px;
+  border-radius: 12px;
+  background: #1a1a1a;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
 }

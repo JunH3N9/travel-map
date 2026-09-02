@@ -56,21 +56,44 @@ cities_with_province = gpd.sjoin(
 )
 names_to_keep = cities_with_province[~cities_with_province["name_en"].isin(visited_province_names)]["name"]
 unmatched = set(cities_gdf["name"]) - set(cities_with_province["name"])
-names_to_keep = list(names_to_keep) + list(unmatched)
-cities_trimmed = cities_gdf[cities_gdf["name"].isin(names_to_keep)][["display_name", "geometry"]]
-cities_trimmed.to_file("data/cities.geojson", driver="GeoJSON")
+names_to_keep = set(list(names_to_keep) + list(unmatched))
+cities_visited = cities_gdf[cities_gdf["name"].isin(names_to_keep)][["display_name", "geometry"]]
+cities_visited.to_file("data/cities.geojson", driver="GeoJSON")
 
 #Sanity check
+'''
 print(f"Countries: {len(countries_visited)} / expected {len(set(visited_country_names))}")
 print(f"Provinces: {len(provinces_visited)} / expected {len(set(visited_province_names))}")
-print(f"Cities: {len(cities_trimmed)} / expected {len(set(city_names))}")
+print(f"Cities: {len(cities_visited)} / expected {len(set(city_names))}")'''
+
 
 ############## Stats ##############
-stats = {
-    "countries": len(visited_country_names),
-    "cities": len(visited_cities),
-    "provinces": len(visited_province_names),
-}
+stats_df = pd.DataFrame(
+    columns=["country", "flag", "city_province", "country_area", "travelled_area", "travelled_area_percentage"]
+    )
+stats_df["country"] = countries_visited["NAME"]
+#Flag emoji
+'''def country_code_to_flag(iso_code):
+    return "".join(chr(ord(c) + 127397) for c in iso_code.upper())'''
+stats_df["flag"] = countries_visited["ISO_A2"]
+
+for country in stats_df["country"]:
+    country_area = countries_visited[countries_visited["NAME"] == country].to_crs("EPSG:6933").geometry.area.values[0] / 1_000_000
+    travelled_area = provinces_visited[provinces_visited["admin"] == country].to_crs("EPSG:6933").geometry.area.sum() / 1_000_000
+    travelled_area += cities_visited[cities_visited["display_name"].str.contains(country)].to_crs("EPSG:6933").geometry.area.sum() / 1_000_000
+    travelled_area_percentage = (travelled_area / country_area) * 100 if country_area > 0 else 0
+
+    city_province_list = cities_visited[cities_visited["display_name"].str.contains(country)]["display_name"].tolist()
+    for city in city_province_list:
+        city_province_list[city_province_list.index(city)] = city.split(",")[0]
+    city_province_list += provinces_visited[provinces_visited["admin"] == country]["name_en"].tolist()
+    city_province_list = ", ".join(city_province_list)
+
+    stats_df.loc[stats_df["country"] == country, "country_area"] = country_area
+    stats_df.loc[stats_df["country"] == country, "travelled_area"] = travelled_area
+    stats_df.loc[stats_df["country"] == country, "travelled_area_percentage"] = travelled_area_percentage
+    stats_df.loc[stats_df["country"] == country, "city_province"] = city_province_list
+print(stats_df)
 
 with open("data/stats.json", "w") as f:
-    json.dump(stats, f)
+    json.dump(stats_df.to_dict(orient="records"), f)
