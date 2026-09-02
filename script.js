@@ -2,9 +2,20 @@ const map = new maplibregl.Map({
   container: 'map',
   style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
   center: [0, 20],
-  zoom: 2
+  zoom: 1
 });
 
+/************************ Stats *************************/
+fetch('data/stats.json')
+  .then(response => response.json())
+  .then(stats => {
+    document.getElementById('stats').innerHTML = `
+      <p>🌍 ${stats.countries} countries &nbsp; 🏙️ ${stats.cities} cities &nbsp; 🏞️ ${stats.provinces} provinces</p>
+    `;
+  })
+  .catch(err => console.error('Failed to load stats:', err));
+
+/************************ Map *************************/
 map.on('load', () => {
   // --- Countries layer ---
   map.addSource('countries', {
@@ -90,5 +101,14 @@ map.on('load', () => {
 
     setMode('countries'); // default view on load
 
+    document.getElementById('btn-fullscreen').addEventListener('click', () => {
+      const mapEl = document.getElementById('map');
+
+      if (!document.fullscreenElement) {
+        mapEl.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    });
 });
 

@@ -2,6 +2,7 @@
 import pandas as pd
 import geopandas as gpd
 import osmnx as ox
+import json
 
 ############## Import travel data stored on Google Sheets ##############
 trips = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRb5sfrac1v5ltBRyZWFVk4hXUY5R1chhrmd6eZEXOr-TH9nErYvcPLAI8AKzD6S23PE1NX_KIIlYz2/pub?gid=0&single=true&output=csv")
@@ -33,10 +34,6 @@ provinces_visited = all_provinces_trimmed[
 provinces_visited.to_file("data/provinces.geojson", driver="GeoJSON")
 print(f"Provinces: {len(provinces_visited)}")
 
-#Sanity check
-print(f"Countries: {len(countries_visited)} / expected {len(set(visited_country_names))}")
-print(f"Provinces: {len(provinces_visited)} / expected {len(set(visited_province_names))}")
-
 ############## Filter cities and columns ##############
 city_names = [f"{city}, {country}" for city, country in visited_cities]
 city_boundaries = []
@@ -62,4 +59,18 @@ unmatched = set(cities_gdf["name"]) - set(cities_with_province["name"])
 names_to_keep = list(names_to_keep) + list(unmatched)
 cities_trimmed = cities_gdf[cities_gdf["name"].isin(names_to_keep)][["display_name", "geometry"]]
 cities_trimmed.to_file("data/cities.geojson", driver="GeoJSON")
-print(f"Cities: {len(cities_trimmed)}")
+
+#Sanity check
+print(f"Countries: {len(countries_visited)} / expected {len(set(visited_country_names))}")
+print(f"Provinces: {len(provinces_visited)} / expected {len(set(visited_province_names))}")
+print(f"Cities: {len(cities_trimmed)} / expected {len(set(city_names))}")
+
+############## Stats ##############
+stats = {
+    "countries": len(visited_country_names),
+    "cities": len(visited_cities),
+    "provinces": len(visited_province_names),
+}
+
+with open("data/stats.json", "w") as f:
+    json.dump(stats, f)
