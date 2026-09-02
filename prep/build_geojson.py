@@ -58,7 +58,7 @@ cities_with_province = gpd.sjoin(
 names_to_keep = cities_with_province[~cities_with_province["name_en"].isin(visited_province_names)]["name"]
 unmatched = set(cities_gdf["name"]) - set(cities_with_province["name"])
 names_to_keep = set(list(names_to_keep) + list(unmatched))
-cities_visited = cities_gdf[cities_gdf["name"].isin(names_to_keep)][["display_name", "geometry"]]
+cities_visited = cities_gdf[cities_gdf["name"].isin(names_to_keep)][["name", "geometry"]]
 cities_visited.to_file("data/cities.geojson", driver="GeoJSON")
 print(f"Cities: {len(cities_visited)}")
 
@@ -79,10 +79,10 @@ countries_df["flag"] = countries_visited["ISO_A2"]
 for country in countries_df["country"]:
     country_area = countries_visited[countries_visited["NAME"] == country].to_crs("EPSG:6933").geometry.area.values[0] / 1_000_000
     travelled_area = provinces_visited[provinces_visited["admin"] == country].to_crs("EPSG:6933").geometry.area.sum() / 1_000_000
-    travelled_area += cities_visited[cities_visited["display_name"].str.contains(country)].to_crs("EPSG:6933").geometry.area.sum() / 1_000_000
+    travelled_area += cities_visited[cities_visited["name"].str.contains(country)].to_crs("EPSG:6933").geometry.area.sum() / 1_000_000
     travelled_area_percentage = (travelled_area / country_area) * 100 if country_area > 0 else 0
 
-    city_province_list = cities_visited[cities_visited["display_name"].str.contains(country)]["display_name"].tolist()
+    city_province_list = cities_visited[cities_visited["name"].str.contains(country)]["name"].tolist()
     for city in city_province_list:
         city_province_list[city_province_list.index(city)] = city.split(",")[0]
     city_province_list += provinces_visited[provinces_visited["admin"] == country]["name_en"].tolist()
@@ -106,13 +106,13 @@ furthest_distance = 0
 furthest_location = ""
 furthest_country = ""
 
-for cities in cities_visited["display_name"]:
-    location = cities_visited[cities_visited["display_name"] == cities]["geometry"].iloc[0]
+for cities in cities_visited["name"]:
+    location = cities_visited[cities_visited["name"] == cities]["geometry"].iloc[0]
     distance = location.distance(home_country_info.to_crs("EPSG:6933").geometry.iloc[0]) / 1000
     if distance > furthest_distance:
         furthest_distance = distance
         furthest_location = cities.split(",")[0]
-        furthest_country = cities_visited[cities_visited["display_name"] == cities]["display_name"].values[0].split(",")[-1].strip()
+        furthest_country = cities_visited[cities_visited["name"] == cities]["name"].values[0].split(",")[-1].strip()
 for provinces in provinces_visited["name_en"]:
     location = provinces_visited[provinces_visited["name_en"] == provinces]["geometry"].iloc[0]
     distance = location.distance(home_country_info.to_crs("EPSG:6933").geometry.iloc[0]) / 1000
@@ -148,13 +148,20 @@ provinces_planned_filtered = all_provinces_trimmed[
 ############## Filter cities and columns ##############
 city_names = [f"{city}, {country}" for city, country in cities_planned]
 city_boundaries = []
+missing_cities = []
 #Get boundaries of each city
 for name in city_names:
-    boundary = ox.geocode_to_gdf(name)
-    city_boundaries.append(boundary)
+    try:
+        boundary = ox.geocode_to_gdf(name)
+        city_boundaries.append(boundary)
+    except Exception as e:
+        print(f"Error: {e}")
+        missing_cities.append(name)
+
+city_names = set([f"{city}" for city, country in cities_planned]) - set(missing_cities)
 cities_gdf = pd.concat(city_boundaries, ignore_index=True)
 cities_gdf = gpd.GeoDataFrame(cities_gdf, geometry="geometry", crs="EPSG:4326")
-cities_planned = cities_gdf[cities_gdf["name"].isin(city_names)][["display_name", "geometry"]]
+cities_planned = cities_gdf[cities_gdf["name"].isin(city_names)][["name", "geometry"]]
 
 #Columns in plan_df: country, flag, city_province, geometry
 countries_part = countries_planned_filtered.rename(columns={"NAME": "country", "ISO_A2": "flag"})
@@ -165,7 +172,7 @@ provinces_part = provinces_planned_filtered.rename(columns={"name_en": "city_pro
 provinces_part["flag"] = None  # optional: fill from a country->ISO lookup if you want flags here too
 provinces_part = provinces_part[["country", "flag", "city_province", "geometry"]]
 
-cities_part = cities_planned.rename(columns={"display_name": "city_province"})
+cities_part = cities_planned.rename(columns={"name": "city_province"})
 cities_part["country"] = None  
 cities_part["flag"] = None
 cities_part = cities_part[["country", "flag", "city_province", "geometry"]]
