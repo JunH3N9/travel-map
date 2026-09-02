@@ -9,12 +9,17 @@ const map = new maplibregl.Map({
 fetch('data/stats.json')
   .then(response => response.json())
   .then(data => {
-    const container = document.getElementById('stats');
-
-    const rows = data.map(row => `
+    renderCountryList(data.countries);
+    renderSummaryBox(data.summary);
+  })
+  .catch(err => console.error('Failed to load stats:', err));
+    
+function renderCountryList(countries) {
+  const container = document.getElementById('country-list');
+    const rows = countries.map(row => `
       <div style="margin-bottom: 20px;">
         <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px;">
-          <span class="fi fi-${row.iso_code}" style="font-size: 18px;"></span>
+          <span class="fi fi-${row.flag.toLowerCase()}" style="font-size: 18px;"></span>
           <span style="font-size: 14px; font-weight: 500; flex: 1;">${row.country}</span>
           <span style="font-size: 13px; color: #888;">
             ${row.travelled_area_percentage.toFixed(2)}%
@@ -29,8 +34,41 @@ fetch('data/stats.json')
     `).join('');
 
     container.innerHTML = rows;
-  })
-  .catch(err => console.error('Failed to load stats:', err));
+  }
+function renderSummaryBox(summary) {
+  const container = document.getElementById('summary-box');
+ 
+  // furthest_location is [name, distance_km, country]
+  const [furthestName, furthestDistance, furthestCountry] = summary.furthest_location;
+ 
+  container.innerHTML = `
+    <div class="stat-card">
+      <p class="stat-label">Countries</p>
+      <p class="stat-value">${summary.total_countries}</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Continents</p>
+      <p class="stat-value">${summary.total_continents}</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Provinces</p>
+      <p class="stat-value">${summary.total_provinces}</p>
+    </div>
+    <div class="stat-card">
+      <p class="stat-label">Cities</p>
+      <p class="stat-value">${summary.total_cities}</p>
+    </div>
+    <div class="stat-card furthest">
+      <p class="stat-label">Furthest Location</p>
+      <p class="stat-value-sm">${furthestName}, ${furthestCountry}</p>
+      <p class="stat-unit">${Math.round(furthestDistance).toLocaleString()} km from home</p>
+    </div>
+    <div class="stat-card area">
+      <p class="stat-label">Total Area Traveled</p>
+      <p class="stat-value">${Math.round(summary.total_area).toLocaleString()} km²</p>
+    </div>
+  `;
+}  
 
 /************************ Map *************************/
 map.on('load', () => {

@@ -66,10 +66,32 @@ body {
 }
 
 #stats {
-  width: 60%;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  width: 100%;
   margin: 20px 0;
+  gap: 16px; 
+}
+
+#country-list,
+#summary-box {
   padding: 24px;
   border-radius: 12px;
-  background: #1a1a1a;
+  background: #242424;
   box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+#summary-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-content: start;
+}
+.stat-card { text-align: center; }
+.stat-label { font-size: 11px; color: #999; margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-value { font-size: 26px; font-weight: 500; margin: 0; }
+.stat-value-sm { font-size: 18px; font-weight: 500; margin: 0; }
+.stat-unit { font-size: 12px; color: #999; margin: 4px 0 0; }
+.stat-card.furthest { grid-column: span 2; padding-top: 6px; border-top: 0.5px solid #333; }
+.stat-card.area {grid-column: span 2;text-align: center; padding-top: 6px; border-top: 0.5px solid #333;
 }
