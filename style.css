@@ -51,7 +51,7 @@ body {
   font-size: 14px;
 }
 
-/**************** Map and Stats ****************/
+/**************** Map ****************/
 #content-wrapper {
   width: 80%;
   margin: 0 auto;
@@ -65,6 +65,33 @@ body {
   margin-top: 20px;
 }
 
+#map-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 12px 0;
+  font-size: 13px;
+  color: #ccc;
+}
+
+.key-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.key-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.key-outline {
+  background: transparent;
+  border: 2px solid;
+}
+/**************** Stats ****************/
 #stats {
   display: grid;
   grid-template-columns: 1.4fr 1fr;

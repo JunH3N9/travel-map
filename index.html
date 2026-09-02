@@ -11,13 +11,39 @@
 <body>
   <div id="page">
     <div id="content-wrapper">
-      <div id="map">
+      <!-- Map buttons -->
+      <div id="map">        
         <div id="controls">
           <button id="btn-countries" class="active">Countries</button>
           <button id="btn-detail">Provinces + Cities</button>        
+          <button id="btn-planned">Planned Locations</button>
         </div>
         <button id="btn-fullscreen">⛶</button>
       </div>
+      <!-- Map key-->
+      <div id="map-key">
+        <div class="key-item">
+          <span class="key-swatch key-outline" style="border-color: #ff6b35;"></span>
+          <span>Visited country</span>
+        </div>
+        <div class="key-item">
+          <span class="key-swatch" style="background: #3388ff;"></span>
+          <span>Visited province</span>
+        </div>
+        <div class="key-item">
+          <span class="key-swatch" style="background: #2ecc71;"></span>
+          <span>Visited city</span>
+        </div>
+        <div class="key-item">
+          <span class="key-swatch key-outline" style="border-color: #f5c518;"></span>
+          <span>Planned country</span>
+        </div>
+        <div class="key-item">
+          <span class="key-swatch" style="background: #4d22e6;"></span>
+          <span>Planned province/city</span>
+        </div>
+      </div>
+      <!-- Stats -->
       <div id="stats">
         <div id="country-list"></div>
         <div id="summary-box"></div>
@@ -27,6 +53,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.0/dist/maplibre-gl.js"></script>
   <script src="script.js"></script>
+  
 </body>
-
 </html>

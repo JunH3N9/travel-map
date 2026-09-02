@@ -5,11 +5,10 @@ import osmnx as ox
 import json
 
 ############## Import travel data stored on Google Sheets ##############
-trips = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRb5sfrac1v5ltBRyZWFVk4hXUY5R1chhrmd6eZEXOr-TH9nErYvcPLAI8AKzD6S23PE1NX_KIIlYz2/pub?gid=0&single=true&output=csv")
+trips = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRb5sfrac1v5ltBRyZWFVk4hXUY5R1chhrmd6eZEXOr-TH9nErYvcPLAI8AKzD6S23PE1NX_KIIlYz2/pub?gid=0&output=csv")
 visited_country_names = trips["Country"].dropna().unique().tolist()
 visited_provinces = trips[trips["Type"] == "Province"][["City/Province", "Country"]].dropna().values.tolist()
 visited_cities = trips[trips["Type"] == "City"][["City/Province", "Country"]].dropna().values.tolist()
-
 home_country = 'Singapore' #Hardcoded
 
 ############## Load city and province data ##############
@@ -29,7 +28,6 @@ home_country_info = countries_trimmed[countries_trimmed["NAME"] == home_country]
 columns_to_keep = ["name_en", "admin", "iso_a2", "geometry"]  
 all_provinces_trimmed = provinces[columns_to_keep]
 visited_province_names = [p[0] for p in visited_provinces]
-visited_country_for_province = [p[1] for p in visited_provinces]
 provinces_visited = all_provinces_trimmed[
     all_provinces_trimmed.apply(lambda row: [row["name_en"], row["admin"]] in visited_provinces, axis=1)
 ]
@@ -70,15 +68,12 @@ print(f"Countries: {len(countries_visited)} / expected {len(set(visited_country_
 print(f"Provinces: {len(provinces_visited)} / expected {len(set(visited_province_names))}")
 print(f"Cities: {len(cities_visited)} / expected {len(set(city_names))}")'''
 
-
-############## Stats ##############
+################################################################################################################
+#Stats 
 countries_df = pd.DataFrame(
     columns=["country", "flag", "city_province", "country_area", "travelled_area", "travelled_area_percentage"]
     )
 countries_df["country"] = countries_visited["NAME"]
-#Flag emoji
-'''def country_code_to_flag(iso_code):
-    return "".join(chr(ord(c) + 127397) for c in iso_code.upper())'''
 countries_df["flag"] = countries_visited["ISO_A2"]
 
 for country in countries_df["country"]:
@@ -97,7 +92,6 @@ for country in countries_df["country"]:
     countries_df.loc[countries_df["country"] == country, "travelled_area"] = travelled_area
     countries_df.loc[countries_df["country"] == country, "travelled_area_percentage"] = travelled_area_percentage
     countries_df.loc[countries_df["country"] == country, "city_province"] = city_province_list
-print(countries_df)
 
 total_area = countries_df["travelled_area"].sum()
 summary_df = pd.DataFrame(
@@ -128,8 +122,6 @@ for provinces in provinces_visited["name_en"]:
         furthest_country = provinces_visited[provinces_visited["name_en"] == provinces]["admin"].values[0]
 
 summary_df["furthest_location"] = [[furthest_location, furthest_distance, furthest_country]]
-print(summary_df)
-
 output = {
     "summary": summary_df.to_dict(orient="records")[0],
     "countries": countries_df.to_dict(orient="records")
@@ -137,3 +129,50 @@ output = {
 
 with open("data/stats.json", "w") as f:
     json.dump(output, f, indent=2, ensure_ascii=False)
+
+#####################################################################################################################
+#Planned trips 
+planned_trips = pd.read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRb5sfrac1v5ltBRyZWFVk4hXUY5R1chhrmd6eZEXOr-TH9nErYvcPLAI8AKzD6S23PE1NX_KIIlYz2/pub?gid=509781133&output=csv")    
+countries_planned = planned_trips["Country"].dropna().unique().tolist()
+provinces_planned = planned_trips[planned_trips["Type"] == "Province"][["City/Province", "Country"]].dropna().values.tolist()
+cities_planned = planned_trips[planned_trips["Type"] == "City"][["City/Province", "Country"]].dropna().values.tolist()
+
+############## Filter countries and columns ##############
+countries_planned_filtered = countries_trimmed[countries_trimmed["NAME"].isin(countries_planned)]
+
+############### Filter provinces and columns ##############
+provinces_planned_filtered = all_provinces_trimmed[
+    all_provinces_trimmed.apply(lambda row: [row["name_en"], row["admin"]] in provinces_planned, axis=1)
+]
+
+############## Filter cities and columns ##############
+city_names = [f"{city}, {country}" for city, country in cities_planned]
+city_boundaries = []
+#Get boundaries of each city
+for name in city_names:
+    boundary = ox.geocode_to_gdf(name)
+    city_boundaries.append(boundary)
+cities_gdf = pd.concat(city_boundaries, ignore_index=True)
+cities_gdf = gpd.GeoDataFrame(cities_gdf, geometry="geometry", crs="EPSG:4326")
+cities_planned = cities_gdf[cities_gdf["name"].isin(city_names)][["display_name", "geometry"]]
+
+#Columns in plan_df: country, flag, city_province, geometry
+countries_part = countries_planned_filtered.rename(columns={"NAME": "country", "ISO_A2": "flag"})
+countries_part["city_province"] = None
+countries_part = countries_part[["country", "flag", "city_province", "geometry"]]
+
+provinces_part = provinces_planned_filtered.rename(columns={"name_en": "city_province", "admin": "country"})
+provinces_part["flag"] = None  # optional: fill from a country->ISO lookup if you want flags here too
+provinces_part = provinces_part[["country", "flag", "city_province", "geometry"]]
+
+cities_part = cities_planned.rename(columns={"display_name": "city_province"})
+cities_part["country"] = None  
+cities_part["flag"] = None
+cities_part = cities_part[["country", "flag", "city_province", "geometry"]]
+
+#Combine all (1 row, 1 country/province/city)
+plan_df = pd.concat([countries_part, provinces_part, cities_part], ignore_index=True)
+plan_df = gpd.GeoDataFrame(plan_df, geometry="geometry", crs="EPSG:4326")
+
+with open("data/planned.geojson", "w") as f:
+    json.dump(plan_df.__geo_interface__, f, indent=2, ensure_ascii=False)

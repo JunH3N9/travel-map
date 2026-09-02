@@ -72,7 +72,7 @@ function renderSummaryBox(summary) {
 
 /************************ Map *************************/
 map.on('load', () => {
-  // --- Countries layer ---
+  // --- Countries layer (outline) ---
   map.addSource('countries', {
     type: 'geojson',
     data: 'data/countries.geojson'
@@ -87,7 +87,7 @@ map.on('load', () => {
     }
   });
 
-  // --- Provinces layer ---
+  // --- Provinces layer (fill and outline) ---
   map.addSource('provinces', {
     type: 'geojson',
     data: 'data/provinces.geojson'
@@ -111,7 +111,7 @@ map.on('load', () => {
     }
   });
 
-  // --- Cities layer ---
+  // --- Cities layer (fill and outline) ---
   map.addSource('cities', {
     type: 'geojson',
     data: 'data/cities.geojson'
@@ -134,36 +134,74 @@ map.on('load', () => {
       'line-width': 1.5
     }
   });
+
+  // --- Planned layer ---
+  map.addSource('planned', {
+    type: 'geojson',
+    data: 'data/planned.geojson'
+  });
+  // Countries (outline)
+  map.addLayer({
+    id: 'planned-countries-outline',
+    type: 'line',
+    source: 'planned',
+    filter: ['==', ['get', 'city_province'], null],   // only rows where city_province is empty (i.e. country rows)
+    paint: {
+      'line-color': '#f5c518',
+      'line-width': 1.5
+    }
+  });
+
+  // Provinces/Cities (fill and outline)
+  map.addLayer({
+    id: 'planned-places-fill',
+    type: 'fill',
+    source: 'planned',
+    filter: ['!=', ['get', 'city_province'], null],   // only rows where city_province is populated
+    paint: {
+      'fill-color': '#4d22e6',
+      'fill-opacity': 0.3
+    }
+  })
+  map.addLayer({
+    id: 'planned-places-outline',
+    type: 'line',
+    source: 'planned',
+    filter: ['!=', ['get', 'city_province'], null],
+    paint: {
+      'line-color': '#4d22e6',
+      'line-width': 1.5
+    }
+  });
+
     const countryLayers = ['countries-outline'];
     const detailLayers = ['provinces-fill', 'provinces-outline', 'cities-fill', 'cities-outline'];
+    const plannedLayers = ['planned-countries-outline', 'planned-places-fill', 'planned-places-outline'];
 
-    function setMode(mode) {
-    const showCountries = mode === 'countries';
-
-    countryLayers.forEach(id => {
-        map.setLayoutProperty(id, 'visibility', showCountries ? 'visible' : 'none');
+    function makeToggle(buttonId, layers, startVisible) {
+    let visible = startVisible;
+ 
+    // set initial state
+    layers.forEach(id => {
+      map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
     });
-    detailLayers.forEach(id => {
-        map.setLayoutProperty(id, 'visibility', showCountries ? 'none' : 'visible');
+    document.getElementById(buttonId).classList.toggle('active', visible);
+ 
+    // flip on click
+    document.getElementById(buttonId).addEventListener('click', () => {
+      visible = !visible;
+      layers.forEach(id => {
+        map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+      });
+      document.getElementById(buttonId).classList.toggle('active', visible);
     });
-
-    document.getElementById('btn-countries').classList.toggle('active', showCountries);
-    document.getElementById('btn-detail').classList.toggle('active', !showCountries);
-    }
-
-    document.getElementById('btn-countries').addEventListener('click', () => setMode('countries'));
-    document.getElementById('btn-detail').addEventListener('click', () => setMode('detail'));
-
-    setMode('countries'); // default view on load
-
-    document.getElementById('btn-fullscreen').addEventListener('click', () => {
-      const mapEl = document.getElementById('map');
-
-      if (!document.fullscreenElement) {
-        mapEl.requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
-    });
+  }
+ 
+  // NEW: Countries and Provinces+Cities both start ON by default (previously
+  // only one could be visible at a time). Change startVisible values below
+  // if you'd rather they start off, or keep Countries-only as the default.
+  makeToggle('btn-countries', countryLayers, true);
+  makeToggle('btn-detail', detailLayers, false);
+  makeToggle('btn-planned', plannedLayers, false); // planned starts hidden
 });
 
