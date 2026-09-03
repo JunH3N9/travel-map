@@ -1,0 +1,58 @@
+[
+  {
+    "country": "China",
+    "flag": "CN",
+    "city_province": "Guangdong",
+    "country_area": 9375215.38168585,
+    "travelled_area": 175489.81778468576,
+    "travelled_area_percentage": 1.871848385771477
+  },
+  {
+    "country": "South Korea",
+    "flag": "KR",
+    "city_province": "Seoul",
+    "country_area": 98543.93823297802,
+    "travelled_area": 606.3249444406833,
+    "travelled_area_percentage": 0.6152838574476364
+  },
+  {
+    "country": "Namibia",
+    "flag": "NA",
+    "city_province": "",
+    "country_area": 822713.4661032553,
+    "travelled_area": 0.0,
+    "travelled_area_percentage": 0.0
+  },
+  {
+    "country": "Norway",
+    "flag": "-99",
+    "city_province": "Arendal",
+    "country_area": 382073.73921668844,
+    "travelled_area": 918.9575773653032,
+    "travelled_area_percentage": 0.24051838245918483
+  },
+  {
+    "country": "Netherlands",
+    "flag": "NL",
+    "city_province": "Utrecht",
+    "country_area": 37396.99432455993,
+    "travelled_area": 99.22390470054444,
+    "travelled_area_percentage": 0.26532588111066613
+  },
+  {
+    "country": "Taiwan",
+    "flag": "CN-TW",
+    "city_province": "Taipei",
+    "country_area": 36197.859367214274,
+    "travelled_area": 269.8620160389031,
+    "travelled_area_percentage": 0.7455192675932848
+  },
+  {
+    "country": "Japan",
+    "flag": "JP",
+    "city_province": "Tokyo, Osaka",
+    "country_area": 373506.74726117373,
+    "travelled_area": 42413.87377433975,
+    "travelled_area_percentage": 11.355584359680106
+  }
+]

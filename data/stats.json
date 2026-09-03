@@ -4,7 +4,7 @@
     "total_continents": 2,
     "total_provinces": 1,
     "total_cities": 7,
-    "total_area": 484815.97278166516,
+    "total_area": 522347.2164566947,
     "furthest_location": [
       "Lisbon",
       10001.30667296095,
@@ -23,26 +23,26 @@
     {
       "country": "Vietnam",
       "flag": "VN",
-      "city_province": "",
+      "city_province": "Ho Chi Minh City",
       "country_area": 328891.9254877437,
-      "travelled_area": 0.0,
-      "travelled_area_percentage": 0.0
+      "travelled_area": 36416.31568948367,
+      "travelled_area_percentage": 11.072426188474713
     },
     {
       "country": "Spain",
       "flag": "ES",
-      "city_province": "",
+      "city_province": "Barcelona, Valencia, Seville, Madrid",
       "country_area": 506884.9291343196,
-      "travelled_area": 0.0,
-      "travelled_area_percentage": 0.0
+      "travelled_area": 986.5863997685062,
+      "travelled_area_percentage": 0.19463715393027012
     },
     {
       "country": "Portugal",
       "flag": "PT",
-      "city_province": "",
+      "city_province": "Lisbon, Porto",
       "country_area": 91390.15274400369,
-      "travelled_area": 0.0,
-      "travelled_area_percentage": 0.0
+      "travelled_area": 128.34158577739274,
+      "travelled_area_percentage": 0.14043261984351318
     }
   ]
 }

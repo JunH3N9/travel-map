@@ -70,6 +70,30 @@ function renderSummaryBox(summary) {
   `;
 }  
 
+/************************ Plan info *************************/
+fetch('data/planned.json')
+  .then(response => response.json())
+  .then(data => {
+    renderPlannedList(data);
+  })
+  .catch(err => console.error('Failed to load planned list:', err));
+
+function renderPlannedList(data) {
+  const container = document.getElementById('planned-list');
+
+  const rows = data.map(row => `
+    <div style="margin-bottom: 14px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="fi fi-${row.flag ? row.flag.toLowerCase() : ''}" style="font-size: 18px;"></span>
+        <span style="font-size: 14px; font-weight: 500; flex: 1;">${row.country || row.city_province}</span>
+      </div>
+      ${row.city_province ? `<div style="font-size: 13px; color: #888; margin-top: 6px; ">${row.city_province}</div>` : ''}
+    </div>
+  `).join('');
+
+  container.innerHTML = rows;
+}
+
 /************************ Map *************************/
 map.on('load', () => {
   // --- Countries layer (outline) ---
@@ -187,7 +211,6 @@ map.on('load', () => {
     });
     document.getElementById(buttonId).classList.toggle('active', visible);
  
-    // flip on click
     document.getElementById(buttonId).addEventListener('click', () => {
       visible = !visible;
       layers.forEach(id => {
@@ -197,11 +220,8 @@ map.on('load', () => {
     });
   }
  
-  // NEW: Countries and Provinces+Cities both start ON by default (previously
-  // only one could be visible at a time). Change startVisible values below
-  // if you'd rather they start off, or keep Countries-only as the default.
   makeToggle('btn-countries', countryLayers, true);
-  makeToggle('btn-detail', detailLayers, false);
+  makeToggle('btn-detail', detailLayers, false); //province and cities starts hidden
   makeToggle('btn-planned', plannedLayers, false); // planned starts hidden
 });
 
