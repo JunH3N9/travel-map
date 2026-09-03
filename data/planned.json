@@ -18,14 +18,14 @@
   {
     "country": "Namibia",
     "flag": "NA",
-    "city_province": "",
+    "city_province": "-",
     "country_area": 822713.4661032553,
     "travelled_area": 0.0,
     "travelled_area_percentage": 0.0
   },
   {
     "country": "Norway",
-    "flag": "-99",
+    "flag": "NO",
     "city_province": "Arendal",
     "country_area": 382073.73921668844,
     "travelled_area": 918.9575773653032,
@@ -41,7 +41,7 @@
   },
   {
     "country": "Taiwan",
-    "flag": "CN-TW",
+    "flag": "TW",
     "city_province": "Taipei",
     "country_area": 36197.859367214274,
     "travelled_area": 269.8620160389031,

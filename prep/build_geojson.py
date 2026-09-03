@@ -11,25 +11,60 @@ visited_provinces = trips[trips["Type"] == "Province"][["City/Province", "Countr
 visited_cities = trips[trips["Type"] == "City"][["City/Province", "Country"]].dropna().values.tolist()
 home_country = 'Singapore' #Hardcoded
 
+############## Load city and province data ##############
+gpkg_path = "data/natural_earth_vector.gpkg"
+countries = gpd.read_file(gpkg_path, layer="ne_10m_admin_0_countries")
+provinces = gpd.read_file(gpkg_path, layer="ne_10m_admin_1_states_provinces")
+
+columns_to_keep = ["NAME", "ISO_A2", "ISO_A3", "CONTINENT", "geometry", "ISO_A2_EH"]
+countries = countries[columns_to_keep]
+
+columns_to_keep = ["name_en", "admin", "iso_a2", "geometry"]  
+provinces = provinces[columns_to_keep]
+
 ################################## Functions #######################################
-def country_stats(countries, provinces, cities):
+def get_city_boundaries(cities_planned):
+    city_names = [f"{city}, {country}" for city, country in cities_planned]
+    city_boundaries = []
+    missing_cities = []
+    #Get boundaries of each city
+    for name in city_names:
+        try:
+            boundary = ox.geocode_to_gdf(name)
+            city_boundaries.append(boundary)
+        except Exception as e:
+            print(f"Error: {e}")
+            missing_cities.append(name)
+
+    city_names = set([f"{city}" for city, country in cities_planned]) - set(missing_cities)
+    cities_gdf = pd.concat(city_boundaries, ignore_index=True)
+    cities_gdf = gpd.GeoDataFrame(cities_gdf, geometry="geometry", crs="EPSG:4326")
+
+    return cities_gdf, missing_cities, city_names
+
+def country_stats(country_df, provinces_df, cities_df):
     #Create dataframe
     countries_df = pd.DataFrame(
     columns=["country", "flag", "city_province", "country_area", "travelled_area", "travelled_area_percentage"]
     )
-    
-    countries_df["country"] = countries["NAME"]
-    countries_df["flag"] = countries["ISO_A2"]
+    countries_df["country"] = country_df["NAME"]
+    countries_df["flag"] = country_df["ISO_A2"]
+
+    #If ISO_A2 code is not valid, use ISO_A2_EH
+    invalid_code = (countries_df["flag"].str.len() != 2) | (countries_df["flag"].isna())
+    countries_df.loc[invalid_code, "flag"] = country_df.loc[invalid_code, "ISO_A2_EH"]
 
     for country in countries_df["country"]:
-        country_area = countries[countries["NAME"] == country].to_crs("EPSG:6933").geometry.area.values[0] / 1_000_000
-        travelled_area = provinces[provinces["admin"] == country].to_crs("EPSG:6933").geometry.area.sum() / 1_000_000
-        travelled_area += cities[cities["display_name"].str.contains(country)].to_crs("EPSG:6933").geometry.area.sum() / 1_000_000
+        country_area = country_df[country_df["NAME"] == country].to_crs("EPSG:6933").geometry.area.values[0] / 1_000_000
+        travelled_area = provinces_df[provinces_df["admin"] == country].to_crs("EPSG:6933").geometry.area.sum() / 1_000_000
+        travelled_area += cities_df[cities_df["display_name"].str.contains(country)].to_crs("EPSG:6933").geometry.area.sum() / 1_000_000
         travelled_area_percentage = (travelled_area / country_area) * 100 if country_area > 0 else 0
 
-        city_province_list = cities[cities["display_name"].str.contains(country)]["name"].tolist()
-        city_province_list += provinces[provinces["admin"] == country]["name_en"].tolist()
+        city_province_list = cities_df[cities_df["display_name"].str.contains(country)]["name"].tolist()
+        city_province_list += provinces_df[provinces_df["admin"] == country]["name_en"].tolist()
         city_province_list = ", ".join(city_province_list)
+        if city_province_list == '':
+            city_province_list = '-'
 
         countries_df.loc[countries_df["country"] == country, "country_area"] = country_area
         countries_df.loc[countries_df["country"] == country, "travelled_area"] = travelled_area
@@ -38,39 +73,22 @@ def country_stats(countries, provinces, cities):
 
     return countries_df
 
-############## Load city and province data ##############
-gpkg_path = "data/natural_earth_vector.gpkg"
-countries = gpd.read_file(gpkg_path, layer="ne_10m_admin_0_countries")
-provinces = gpd.read_file(gpkg_path, layer="ne_10m_admin_1_states_provinces")
-
 ############## Filter countries and columns ##############
-columns_to_keep = ["NAME", "ISO_A2", "ISO_A3", "CONTINENT", "geometry"]
-countries_trimmed = countries[columns_to_keep]
-countries_visited = countries_trimmed[countries_trimmed["NAME"].isin(visited_country_names)]
+countries_visited = countries[countries["NAME"].isin(visited_country_names)]
 countries_visited.to_file("data/countries.geojson", driver="GeoJSON")
 print(f"Countries: {len(countries_visited)}")
-home_country_info = countries_trimmed[countries_trimmed["NAME"] == home_country]
+home_country_info = countries[countries["NAME"] == home_country]
 
 ############### Filter provinces and columns ##############
-columns_to_keep = ["name_en", "admin", "iso_a2", "geometry"]  
-all_provinces_trimmed = provinces[columns_to_keep]
 visited_province_names = [p[0] for p in visited_provinces]
-provinces_visited = all_provinces_trimmed[
-    all_provinces_trimmed.apply(lambda row: [row["name_en"], row["admin"]] in visited_provinces, axis=1)
+provinces_visited = provinces[
+    provinces.apply(lambda row: [row["name_en"], row["admin"]] in visited_provinces, axis=1)
 ]
-
 provinces_visited.to_file("data/provinces.geojson", driver="GeoJSON")
 print(f"Provinces: {len(provinces_visited)}")
 
 ############## Filter cities and columns ##############
-city_names = [f"{city}, {country}" for city, country in visited_cities]
-city_boundaries = []
-#Get boundaries of each city
-for name in city_names:
-    boundary = ox.geocode_to_gdf(name)
-    city_boundaries.append(boundary)
-cities_gdf = pd.concat(city_boundaries, ignore_index=True)
-cities_gdf = gpd.GeoDataFrame(cities_gdf, geometry="geometry", crs="EPSG:4326")
+cities_gdf, missing_cities, city_names = get_city_boundaries(visited_cities)
 
 # Use the centre of the city to determine if found in a province already mentioned (Drop if so)
 cities_points = cities_gdf.copy()
@@ -82,6 +100,7 @@ cities_with_province = gpd.sjoin(
     provinces_visited[["name_en", "admin", "geometry"]],
     predicate="within"
 )
+
 names_to_keep = cities_with_province[~cities_with_province["name_en"].isin(visited_province_names)]["name"]
 unmatched = set(cities_gdf["name"]) - set(cities_with_province["name"])
 names_to_keep = set(list(names_to_keep) + list(unmatched))
@@ -98,7 +117,7 @@ print(f"Cities: {len(cities_visited)} / expected {len(set(city_names))}")'''
 
 ################################################################################################################
 #Stats 
-countries_df = country_stats(countries_visited, provinces_visited, cities_visited) #Call function
+countries_df = country_stats(countries_visited, provinces_visited, cities_visited)
 print(f"Stats:\n {countries_df}")
 
 total_area = countries_df["travelled_area"].sum()
@@ -121,13 +140,13 @@ for cities in cities_visited["name"]:
         furthest_distance = distance
         furthest_location = cities.split(",")[0]
         furthest_country = cities_visited[cities_visited["name"] == cities]["name"].values[0].split(",")[-1].strip()
-for provinces in provinces_visited["name_en"]:
-    location = provinces_visited[provinces_visited["name_en"] == provinces]["geometry"].iloc[0]
+for province in provinces_visited["name_en"]:
+    location = provinces_visited[provinces_visited["name_en"] == province]["geometry"].iloc[0]
     distance = location.distance(home_country_info.to_crs("EPSG:6933").geometry.iloc[0]) / 1000
     if distance > furthest_distance:
         furthest_distance = distance
-        furthest_location = provinces
-        furthest_country = provinces_visited[provinces_visited["name_en"] == provinces]["admin"].values[0]
+        furthest_location = province
+        furthest_country = provinces_visited[provinces_visited["name_en"] == province]["admin"].values[0]
 
 summary_df["furthest_location"] = [[furthest_location, furthest_distance, furthest_country]]
 output = {
@@ -146,30 +165,16 @@ provinces_planned = planned_trips[planned_trips["Type"] == "Province"][["City/Pr
 cities_planned = planned_trips[planned_trips["Type"] == "City"][["City/Province", "Country"]].dropna().values.tolist()
 
 ############## Filter countries and columns ##############
-countries_planned_filtered = countries_trimmed[countries_trimmed["NAME"].isin(countries_planned)]
+countries_planned_filtered = countries[countries["NAME"].isin(countries_planned)]
 
 ############### Filter provinces and columns ##############
-provinces_planned_filtered = all_provinces_trimmed[
-    all_provinces_trimmed.apply(lambda row: [row["name_en"], row["admin"]] in provinces_planned, axis=1)
+provinces_planned_filtered = provinces[
+    provinces.apply(lambda row: [row["name_en"], row["admin"]] in provinces_planned, axis=1)
 ]
 
 ############## Filter cities and columns ##############
-city_names = [f"{city}, {country}" for city, country in cities_planned]
-city_boundaries = []
-missing_cities = []
-#Get boundaries of each city
-for name in city_names:
-    try:
-        boundary = ox.geocode_to_gdf(name)
-        city_boundaries.append(boundary)
-    except Exception as e:
-        print(f"Error: {e}")
-        missing_cities.append(name)
-
-city_names = set([f"{city}" for city, country in cities_planned]) - set(missing_cities)
-cities_gdf = pd.concat(city_boundaries, ignore_index=True)
-cities_gdf = gpd.GeoDataFrame(cities_gdf, geometry="geometry", crs="EPSG:4326")
-cities_planned = cities_gdf[cities_gdf["name"].isin(city_names)][["display_name","name", "geometry"]]
+planned_cities_gdf, missing_planned_city, planned_city_names = get_city_boundaries(cities_planned)
+cities_planned = planned_cities_gdf[planned_cities_gdf["name"].isin(planned_city_names)][["display_name","name", "geometry"]]
 
 #Columns in plan_map_df: country, flag, city_province, geometry
 countries_part = countries_planned_filtered.rename(columns={"NAME": "country", "ISO_A2": "flag"})
@@ -189,8 +194,7 @@ cities_part = cities_part[["country", "flag", "city_province", "geometry"]]
 plan_map_df = pd.concat([countries_part, provinces_part, cities_part], ignore_index=True)
 plan_map_df = gpd.GeoDataFrame(plan_map_df, geometry="geometry", crs="EPSG:4326")
 
-with open("data/planned.geojson", "w") as f:
-    json.dump(plan_map_df.__geo_interface__, f, indent=2, ensure_ascii=False)
+plan_map_df.to_file("data/cities.geojson", driver="GeoJSON")
 
 plan_stats_df = country_stats(countries_planned_filtered, provinces_planned_filtered, cities_planned)
 print(f"Plan stats: \n{plan_stats_df}")
